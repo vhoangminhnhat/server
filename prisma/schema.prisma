@@ -7,13 +7,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum MemoryType {
+  LONG_TERM_FACT
+  USER_PREFERENCE
+  CONVERSATION_SUMMARY
+}
+
 model User {
-  id       String @id @default(uuid())
-  email    String @unique
+  id          String   @id @default(uuid())
+  email       String   @unique
   phoneNumber String
-  password String
-  role     String
-  createdAt DateTime @default(now())
+  password    String
+  role        String
+  createdAt   DateTime @default(now())
 }
 
 model ChatMessage {
@@ -23,4 +29,44 @@ model ChatMessage {
   senderName     String
   content        String
   createdAt      DateTime @default(now())
+}
+
+model Memory {
+  id             String     @id
+  conversationId String
+  userId         String?
+  content        String     @db.Text
+  memoryType     MemoryType
+  createdAt      DateTime   @default(now())
+
+  @@index([conversationId])
+  @@index([userId])
+}
+
+model AiDocument {
+  id        String            @id
+  title     String
+  source    String?
+  content   String            @db.Text
+  userId    String?
+  createdAt DateTime          @default(now())
+  chunks    AiDocumentChunk[]
+
+  @@index([userId])
+}
+
+model AiDocumentChunk {
+  id         String     @id
+  documentId String
+  chunkIndex Int
+  title      String
+  source     String?
+  content    String     @db.Text
+  searchText String     @db.Text
+  userId     String?
+  createdAt  DateTime   @default(now())
+  document   AiDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([userId])
 }

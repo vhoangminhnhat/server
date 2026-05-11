@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AiModule } from '@/ai/ai.module';
 import { AuthModule } from '@/auth/auth.module';
 import { ChatController } from './chat.controller';
 import { CreateMessageUseCase } from './application/createMessage.useCase';
@@ -7,7 +8,7 @@ import { ChatToken } from './domain/token/chat.repository.token';
 import { ChatRepository } from './infrastructure/chat.repository';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, AiModule],
   controllers: [ChatController],
   providers: [
     CreateMessageUseCase,
