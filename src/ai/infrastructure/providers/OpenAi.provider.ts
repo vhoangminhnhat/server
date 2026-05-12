@@ -6,7 +6,7 @@ import { IAiModelProvider } from '../../domain/interface/aiModelProvider.interfa
 @Injectable()
 export class OpenAiProvider implements IAiModelProvider {
   async generateResponse(context: PromptContext): Promise<AiChatResponse> {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = this.getApiKey();
     const model = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
 
     if (apiKey) {
@@ -110,6 +110,10 @@ export class OpenAiProvider implements IAiModelProvider {
 
   private buildInsufficientContextAnswer(): string {
     return 'Mình chưa tìm thấy nội dung nội bộ đủ liên quan để trả lời chắc chắn. Bạn có thể import thêm văn bản hoặc hỏi cụ thể hơn về điều/khoản/nội dung cần đối chiếu.';
+  }
+
+  private getApiKey(): string | undefined {
+    return process.env.OPENAI_API_KEY;
   }
 
   private getRetrievedDocumentIds(context: PromptContext): string[] {

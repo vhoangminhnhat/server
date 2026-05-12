@@ -8,12 +8,14 @@ import { GenerateChatResponseUseCase } from './application/useCases/generateChat
 import { ImportDocumentUseCase } from './application/useCases/importDocument.useCase';
 import { AiModelProviderToken } from './domain/token/aiModelProvider.token';
 import { DocumentRepositoryToken } from './domain/token/documentRepository.token';
+import { EmbeddingProviderToken } from './domain/token/embeddingProvider.token';
 import { MemoryRepositoryToken } from './domain/token/memoryRepository.token';
 import { RetrievalProviderToken } from './domain/token/RetrievalProvider.token';
 import { PrismaDocumentRepository } from './infrastructure/persistence/PrismaDocument.repository';
 import { PrismaMemoryRepository } from './infrastructure/persistence/PrismaMemory.repository';
 import { OpenAiProvider } from './infrastructure/providers/OpenAi.provider';
-import { KeywordRetrievalRepository } from './infrastructure/retrieval/KeywordRetrieval.repository';
+import { OpenAiEmbeddingProvider } from './infrastructure/providers/OpenAiEmbedding.provider';
+import { HybridVectorRetrievalRepository } from './infrastructure/retrieval/HybridVectorRetrieval.repository';
 import { PromptAssemblerService } from './prompts/assembler/PromptAssembler.service';
 import { PromptBudgetManagerService } from './prompts/budget/PromptBudgetManager.service';
 import { TokenEstimatorService } from './prompts/budget/TokenEstimator.service';
@@ -68,6 +70,11 @@ import { RetrievalTemplate } from './prompts/templates/Retrievial.template';
       useClass: OpenAiProvider,
     },
 
+    {
+      provide: EmbeddingProviderToken.EMBEDDING_PROVIDER,
+      useClass: OpenAiEmbeddingProvider,
+    },
+
     /**
      * =========================================================
      * MEMORY PERSISTENCE
@@ -92,7 +99,7 @@ import { RetrievalTemplate } from './prompts/templates/Retrievial.template';
 
     {
       provide: RetrievalProviderToken.RETRIEVAL_PROVIDER,
-      useClass: KeywordRetrievalRepository,
+      useClass: HybridVectorRetrievalRepository,
     },
   ],
 

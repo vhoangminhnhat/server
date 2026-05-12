@@ -63,6 +63,7 @@ model AiDocumentChunk {
   source     String?
   content    String     @db.Text
   searchText String     @db.Text
+  embedding  Json?
   userId     String?
   createdAt  DateTime   @default(now())
   document   AiDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)

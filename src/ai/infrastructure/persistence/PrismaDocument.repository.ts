@@ -28,6 +28,7 @@ export class PrismaDocumentRepository implements IDocumentRepository {
             source: chunk.source,
             content: chunk.content,
             searchText: chunk.searchText,
+            embedding: chunk.embedding,
             userId: chunk.userId,
             createdAt: chunk.createdAt || new Date(),
           })),

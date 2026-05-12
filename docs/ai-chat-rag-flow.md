@@ -107,9 +107,11 @@ Server chia tài liệu thành các đoạn nhỏ.
 
 Chiến lược hiện tại:
 
-- Ưu tiên split theo paragraph.
-- Mỗi chunk tối đa khoảng `1800` ký tự.
-- Có overlap khoảng `220` ký tự cho đoạn quá dài.
+- Với văn bản pháp luật, ưu tiên chunk theo `Điều ...`.
+- Giữ heading cha như `Phần`, `Chương`, `Mục`, `Tiểu mục` trong chunk để không mất bối cảnh.
+- Với `Điều` quá dài, tách tiếp theo `Khoản`/điểm và lặp lại tiêu đề Điều.
+- Nếu không nhận diện được cấu trúc pháp lý, fallback về paragraph.
+- Mỗi chunk tối đa khoảng `1800` ký tự, có overlap khoảng `220` ký tự cho đoạn quá dài.
 
 Overlap giúp giảm nguy cơ mất ngữ cảnh khi một ý nằm giữa ranh giới hai chunk.
 
@@ -123,12 +125,25 @@ Với mỗi chunk, server tạo `searchText` bằng cách nối:
 
 Sau đó lower-case để phục vụ keyword search.
 
-### Bước 6: Save To Database
+### Bước 6: Build Embedding
+
+Với mỗi chunk, server tạo vector embedding bằng `IEmbeddingProvider`.
+
+Provider hiện tại là `OpenAiEmbeddingProvider`:
+
+- Gọi OpenAI Embeddings API qua `POST /v1/embeddings`.
+- Dùng `OPENAI_EMBEDDING_MODEL`, mặc định `text-embedding-3-small`.
+- Dùng `OPENAI_API_KEY`.
+- Vector trả về từ OpenAI được dùng để tính cosine similarity.
+
+Embedding được lưu vào `AiDocumentChunk.embedding` dạng `Json`.
+
+### Bước 7: Save To Database
 
 Server lưu:
 
 - Một record `AiDocument` chứa tài liệu gốc.
-- Nhiều record `AiDocumentChunk` chứa các chunk.
+- Nhiều record `AiDocumentChunk` chứa các chunk, `searchText`, và `embedding`.
 
 Quan hệ:
 
@@ -217,19 +232,23 @@ Mục tiêu là tránh prompt vượt quá giới hạn model.
 
 `PromptContextBuilderService` gọi retrieval provider.
 
-Retrieval hiện tại là `KeywordRetrievalRepository`.
+Retrieval hiện tại là `HybridVectorRetrievalRepository`.
 
 Luồng retrieval:
 
 1. Normalize query.
-2. Tách query thành các keyword.
-3. Bỏ một số stop words.
-4. Query `AiDocumentChunk` theo `searchText contains keyword`.
-5. Tính relevance score cho từng chunk.
-6. Sort theo score giảm dần.
-7. Lấy top chunks.
+2. Tách query thành keyword và bỏ một số stop words.
+3. Tạo query embedding bằng cùng `IEmbeddingProvider`.
+4. Lấy candidate chunks từ keyword match và latest vector candidates.
+5. Tính `keywordScore` theo coverage/density.
+6. Tính `vectorScore` bằng cosine similarity giữa query embedding và chunk embedding.
+7. Blend score hiện tại: `vectorScore * 0.65 + keywordScore * 0.35`.
+8. Sort theo score giảm dần.
+9. Lấy top chunks.
 
-Nếu văn bản đã import có keyword phù hợp, server sẽ retrieve được các chunk liên quan.
+Nếu chunk cũ chưa có embedding trong database, `vectorScore` của chunk đó sẽ là `0` và keyword score vẫn hoạt động. Nên re-import hoặc chạy backfill embedding để tài liệu cũ hưởng đầy đủ hybrid vector retrieval.
+
+Nếu văn bản đã import có keyword phù hợp hoặc vector gần nghĩa với query, server sẽ retrieve được các chunk liên quan. Metadata của chunk trả thêm `retrievalType`, `keywordScore`, và `vectorScore` để dễ debug.
 
 ### Bước 7: Build Prompt Context
 
@@ -406,25 +425,34 @@ Cần thêm:
 
 ### Better Chunking
 
-Chunking hiện tại chỉ theo paragraph và length.
+Chunking hiện tại đã ưu tiên cấu trúc văn bản pháp luật:
 
-Nên nâng cấp:
+- Nhận diện heading như `Phần`, `Chương`, `Mục`, `Tiểu mục`.
+- Chunk theo `Điều ...` và giữ heading cha trong chunk.
+- Với `Điều` quá dài, tách tiếp theo `Khoản`/điểm và lặp lại tiêu đề Điều để không mất ngữ cảnh.
+- Nếu không nhận diện được cấu trúc pháp lý, fallback về paragraph và length.
 
-- Chunk theo heading/section/article.
-- Giữ page number.
-- Giữ article number, clause number.
-- Không cắt ngang điều khoản pháp lý.
+Nên nâng cấp tiếp:
+
+- Giữ page number từ parser.
+- Lưu article number, clause number thành metadata riêng.
 - Lưu citation metadata chi tiết hơn.
 
 ### Vector Search
 
-Keyword search chỉ là MVP.
+Vector search MVP đã được thêm:
+
+- Import flow tạo embedding cho từng chunk.
+- Embedding lưu ở `AiDocumentChunk.embedding`.
+- Retrieval dùng hybrid search: keyword candidates + vector similarity candidates.
+- Score cuối blend giữa `vectorScore` và `keywordScore`.
 
 Nên nâng cấp:
 
-- Embeddings.
 - `pgvector` trong PostgreSQL hoặc vector DB riêng.
-- Hybrid search: keyword + vector.
+- Backfill embedding cho các chunk cũ.
+- Có thể thay OpenAI embeddings bằng model nội bộ nếu cần chạy offline.
+- Vector index để không phải scan candidate chunks trong app.
 - Reranking.
 
 ### Citation-Aware Answering
@@ -469,8 +497,9 @@ Giai đoạn MVP:
 NestJS API
   -> Upload/import text
   -> Chunk
-  -> Store in Postgres
-  -> Keyword retrieval
+  -> Create OpenAI embeddings
+  -> Store chunks + embeddings in Postgres
+  -> Hybrid vector + keyword retrieval
   -> OpenAI response
   -> Save chat messages
 ```
