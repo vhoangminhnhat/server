@@ -1,12 +1,12 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { GenerateChatResponseUseCase } from '@/ai/application/useCases/generateChatResponse.useCase';
-import { AiChatRequest } from '@/ai/domain/entities/AiChatRequest.entity';
 import { okResponse } from '@/common/models/apiResponse.model';
 import { ChatMessage } from '../domain/entity/chatMessage.entity';
 import { IChatRepository } from '../domain/interface/chat.repository.interface';
 import { ChatToken } from '../domain/token/chat.repository.token';
 import { CreateChatMessageDto } from '../dto/createChatMessage.dto';
+import { GenerateChatResponseUseCase } from '@/aiEmbedding/chat/applications/GenerateChat.useCase';
+import { AiChatRequest } from '@/aiEmbedding/chat/domains/entities/aiChats/AiChatRequest.entity';
 
 @Injectable()
 export class CreateMessageUseCase {

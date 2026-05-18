@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common';
-import { AiModule } from '@/ai/ai.module';
 import { AuthModule } from '@/auth/auth.module';
 import { ChatController } from './chat.controller';
 import { CreateMessageUseCase } from './application/createMessage.useCase';
 import { GetMessagesUseCase } from './application/getMessages.useCase';
 import { ChatToken } from './domain/token/chat.repository.token';
 import { ChatRepository } from './infrastructure/chat.repository';
+import { AiEmbeddingModule } from '@/aiEmbedding/aiEmbedding.module';
 
 @Module({
-  imports: [AuthModule, AiModule],
+  imports: [AuthModule, AiEmbeddingModule],
   controllers: [ChatController],
   providers: [
     CreateMessageUseCase,

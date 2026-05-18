@@ -1,4 +1,3 @@
-import { RetrievalRepositoryToken } from '@/ai/domain/token/retrievalRepository.token';
 import { Module } from '@nestjs/common';
 import { GenerateChatResponseUseCase } from './chat/applications/GenerateChat.useCase';
 import { PromptContextBuilderService } from './chat/applications/PromptContextBuilder.service';
@@ -23,6 +22,7 @@ import { AiModelProviderToken } from './shared/tokens/aiModelProviders/AiModelPr
 import { EmbeddingProviderToken } from './shared/tokens/aiModelProviders/EmbeddingProvider.token';
 import { DocumentRepositoryToken } from './shared/tokens/documents/DocumentRepository.token';
 import { MemoryRepositoryToken } from './shared/tokens/memories/MemoryRepository.token';
+import { RetrievalRepositoryToken } from './shared/tokens/retrievals/RetrievalRepository.token';
 
 @Module({
   controllers: [AiChatController, DocumentIngestionController],
@@ -99,7 +99,7 @@ import { MemoryRepositoryToken } from './shared/tokens/memories/MemoryRepository
      */
 
     {
-      provide: RetrievalRepositoryToken.RETRIEVAL_REPOSITORY,
+      provide: RetrievalRepositoryToken.RETRIEVAL_PROVIDER,
       useClass: HybridVectorRetrievalRepository,
     },
   ],

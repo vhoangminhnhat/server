@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { IEmbeddingProviderRepository } from '../shared/repositories/aiModelProviders/EmbeddingProviderRepository';
+import { IEmbeddingProviderRepository } from '../domains/EmbeddingProviderRepository';
 
 @Injectable()
 export class OpenAiEmbeddingProvider implements IEmbeddingProviderRepository {
